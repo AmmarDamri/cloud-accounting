@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Cloud-Ready Accounting Software</title>
+    <title>Simple Cloud Accounting Software</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -12,8 +12,8 @@
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-800"> Simple Cloud Accounting</h1>
-            <p class="text-slate-500 mt-1">Apna rozmarra ka hisab-kitaab yahan manage karein</p>
+            <h1 class="text-3xl font-bold text-slate-800">📊 Simple Cloud Accounting</h1>
+            <p class="text-slate-500 mt-1">Apna hisab-kitaab Google Drive ke sath har device par sync rakhein</p>
         </header>
 
         <!-- Dashboard Cards -->
@@ -53,7 +53,7 @@
                             <option value="expense">Expense (Kharcha)</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition text-sm">Save Entry</button>
+                    <button type="submit" id="saveBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition text-sm">Save Entry</button>
                 </form>
             </div>
 
@@ -67,11 +67,12 @@
                                 <th class="pb-3">Description</th>
                                 <th class="pb-3">Type</th>
                                 <th class="pb-3 text-right">Amount</th>
-                                <th class="pb-3 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="transactionList" class="divide-y divide-slate-50 text-sm">
-                            <!-- Transactions will be inserted here dynamically -->
+                            <tr>
+                                <td colspan="3" class="py-4 text-center text-slate-400">Loading data from Google Cloud...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -81,8 +82,33 @@
 
     <!-- JavaScript Logic -->
     <script>
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        // ⚠️ PEHLE APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN
+        const SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL';
 
+        let transactions = [];
+
+        // Google Sheet se data fetch karne ka function
+        async function fetchTransactions() {
+            if (SCRIPT_URL === 'YOUR_GOOGLE_SCRIPT_URL') {
+                document.getElementById('transactionList').innerHTML = `
+                    <tr>
+                        <td colspan="3" class="py-4 text-center text-rose-500 font-medium">
+                            Meharbani karke SCRIPT_URL mein apna Google Apps Script Web App URL daalein!
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            try {
+                const res = await fetch(SCRIPT_URL);
+                transactions = await res.json();
+                updateUI();
+            } catch (err) {
+                console.error("Error loading data:", err);
+            }
+        }
+
+        // Screen par dashboard aur table update karne ka function
         function updateUI() {
             const list = document.getElementById('transactionList');
             const netBalanceEl = document.getElementById('netBalance');
@@ -93,57 +119,15 @@
             let income = 0;
             let expense = 0;
 
-            transactions.forEach((t, index) => {
+            if (transactions.length === 0) {
+                list.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400">Abhi koi transaction nahi hai.</td></tr>`;
+            }
+
+            transactions.forEach((t) => {
                 if (t.type === 'income') {
                     income += Number(t.amount);
                 } else {
                     expense += Number(t.amount);
                 }
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-3 text-slate-700 font-medium">${t.desc}</td>
-                    <td class="py-3">
-                        <span class="px-2 py-1 text-xs rounded-full ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
-                            ${t.type.toUpperCase()}
-                        </span>
-                    </td>
-                    <td class="py-3 text-right font-semibold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">
-                        ${t.type === 'income' ? '+' : '-'} Rs. ${Number(t.amount).toLocaleString()}
-                    </td>
-                    <td class="py-3 text-center">
-                        <button onclick="deleteTransaction(${index})" class="text-slate-400 hover:text-rose-600 text-xs">Delete</button>
-                    </td>
-                `;
-                list.appendChild(row);
-            });
-
-            const net = income - expense;
-            netBalanceEl.innerText = `Rs. ${net.toLocaleString()}`;
-            totalIncomeEl.innerText = `Rs. ${income.toLocaleString()}`;
-            totalExpenseEl.innerText = `Rs. ${expense.toLocaleString()}`;
-
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-        }
-
-        function addTransaction(e) {
-            e.preventDefault();
-            const desc = document.getElementById('desc').value;
-            const amount = document.getElementById('amount').value;
-            const type = document.getElementById('type').value;
-
-            transactions.push({ desc, amount, type });
-            document.getElementById('transactionForm').reset();
-            updateUI();
-        }
-
-        function deleteTransaction(index) {
-            transactions.splice(index, 1);
-            updateUI();
-        }
-
-        // Initial Load
-        updateUI();
-    </script>
-</body>
-</html>
+                const row = document.createElement('
