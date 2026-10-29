@@ -3,17 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Cloud Accounting Software</title>
+    <title>Secure Cloud Accounting Software</title>
     <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 font-sans min-h-screen p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto">
+    <!-- PASSWORD PROTECTION OVERLAY -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full text-center">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">🔒 Admin Login</h2>
+            <p class="text-sm text-slate-500 mb-6">Software access karne ke liye password darj karein</p>
+            <form onsubmit="verifyPassword(event)" class="space-y-4">
+                <input type="password" id="adminPassword" required placeholder="Password enter karein" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-center">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition text-sm">Login</button>
+            </form>
+            <p id="errorMsg" class="text-xs text-rose-500 mt-3 hidden">Ghalat password! Dobara koshish karein.</p>
+        </div>
+    </div>
+
+    <!-- MAIN SOFTWARE (Hidden until login) -->
+    <div id="mainApp" class="max-w-4xl mx-auto hidden">
         <!-- Header -->
-        <header class="mb-8 text-center">
+        <header class="mb-8 text-center relative">
             <h1 class="text-3xl font-bold text-slate-800">📊 Simple Cloud Accounting</h1>
-            <p class="text-slate-500 mt-1">Apna hisab-kitaab Google Drive ke sath har device par sync rakhein</p>
+            <p class="text-slate-500 mt-1">Admin Secure Panel - Google Drive Sync</p>
+            <button onclick="logout()" class="absolute right-0 top-0 text-xs bg-rose-50 text-rose-600 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition font-medium">Logout</button>
         </header>
 
         <!-- Dashboard Cards -->
@@ -71,7 +86,7 @@
                         </thead>
                         <tbody id="transactionList" class="divide-y divide-slate-50 text-sm">
                             <tr>
-                                <td colspan="3" class="py-4 text-center text-slate-400">Loading data from Google Cloud...</td>
+                                <td colspan="3" class="py-4 text-center text-slate-400">Loading data...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -82,10 +97,44 @@
 
     <!-- JavaScript Logic -->
     <script>
-        // Aapka asal Google Apps Script Web App URL yahan lag chuka hai
+        // AAPKA ADMIN PASSWORD (Yahan change bhi kar sakte hain)
+        const ADMIN_PASSWORD = "ammardamri123";
+
+        // Aapka Google Apps Script Web App URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxoK1gPs8q3A2_FcMZQEuxMoxOruJsXh8IG_PYI_VdNH0UEexmu89l6H2e8AgXVcNb-Q/exec';
 
         let transactions = [];
+
+        // Check if already logged in during this session
+        window.onload = function() {
+            if (sessionStorage.getItem('isAdminLoggedIn') === 'true') {
+                showApp();
+            }
+        }
+
+        function verifyPassword(e) {
+            e.preventDefault();
+            const inputPass = document.getElementById('adminPassword').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (inputPass === ADMIN_PASSWORD) {
+                sessionStorage.setItem('isAdminLoggedIn', 'true');
+                showApp();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function showApp() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('mainApp').classList.remove('hidden');
+            fetchTransactions();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('isAdminLoggedIn');
+            location.reload();
+        }
 
         // Google Sheet se data fetch karne ka function
         async function fetchTransactions() {
@@ -162,7 +211,7 @@
                     body: JSON.stringify(newEntry)
                 });
                 document.getElementById('transactionForm').reset();
-                setTimeout(fetchTransactions, 1500); // 1.5 sec wait karke data refresh karein
+                setTimeout(fetchTransactions, 1500); 
             } catch (err) {
                 alert("Error saving data!");
             } finally {
@@ -170,9 +219,6 @@
                 saveBtn.disabled = false;
             }
         }
-
-        // Website khulte hi data load karein
-        fetchTransactions();
     </script>
 </body>
 </html>
